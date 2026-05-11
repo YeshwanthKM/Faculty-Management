@@ -63,10 +63,7 @@ def startup_event():
     finally:
         db.close()
 
-# --- Frontend Route ---
-@app.get("/")
-def serve_home(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html", context={})
+# --- API Routes should come BEFORE Static Files ---
 
 # --- Faculty Routes ---
 @app.get("/api/faculty", response_model=List[schemas.Faculty])
@@ -348,3 +345,6 @@ def get_insights(db: Session = Depends(get_db)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# Serve static files from the "static" directory
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
