@@ -22,6 +22,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Startup Event (Automatic Seeding) ---
+@app.on_event("startup")
+def startup_event():
+    print("DEBUG: Application starting - initializing fresh database...")
+    from database import SessionLocal
+    db = SessionLocal()
+    try:
+        # 1. Create tables if they don't exist
+        models.Base.metadata.create_all(bind=engine)
+        
+        # 2. CLEAR ALL DATA for a fresh start
+        db.query(models.Allocation).delete()
+        db.query(models.ExamSchedule).delete()
+        db.query(models.Faculty).delete()
+        db.commit()
+        
+        # 3. SEED 20 South Indian Faculty
+        import random
+        first_names = ["Arjun", "Lakshmi", "Venkatesh", "Priya", "Karthik", "Sneha", "Rahul", "Meena", "Suresh", "Vidya", 
+                       "Ganesh", "Deepa", "Hari", "Anitha", "Vijay", "Keerthi", "Madhav", "Sindhu", "Rajesh", "Kavitha"]
+        last_names = ["Rao", "Reddy", "Iyer", "Nair", "Shetty", "Pillai", "Choudary", "Varma", "Kumar", "Murthy"]
+        departments = ["CCE", "ECE", "CSE", "AIML", "VLSI", "MECH", "AIDS", "CSBS", "BT", "H&S"]
+        designations = ["Assistant Professor", "Associate Professor", "Professor"]
+        
+        for _ in range(20):
+            faculty = models.Faculty(
+                name=f"{random.choice(first_names)} {random.choice(last_names)}",
+                department=random.choice(departments),
+                designation=random.choice(designations),
+                current_duties=0,
+                leave_dates="[]"
+            )
+            db.add(faculty)
+        db.commit()
+        print("DEBUG: Fresh database initialized with 20 seeded faculty members.")
+    except Exception as e:
+        print(f"ERROR during startup: {str(e)}")
+        db.rollback()
+    finally:
+        db.close()
+
 # --- Frontend Route ---
 @app.get("/")
 def serve_home(request: Request):
