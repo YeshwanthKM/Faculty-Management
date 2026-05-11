@@ -2,8 +2,5 @@ fastapi
 uvicorn
 sqlalchemy
 pydantic
-mysql-connector-python
-pandas
-openpyxl
 python-multipart
 jinja2
