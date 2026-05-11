@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Invigilation Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; transition: background-color 0.3s, color 0.3s; color: #000000; }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(0, 0, 0, 0.1); }
+        .dark .glass-panel { background: rgba(30, 41, 59, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .nav-active { background: #6366f1; color: #ffffff !important; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3); }
+        .sidebar { background: #0f172a; transition: width 0.3s; }
+        .card { background: white; border-radius: 1rem; padding: 1.5rem; transition: all 0.3s; border: 1px solid #e2e8f0; color: #000000; font-weight: 500; }
+        .dark .card { background: #1e293b; border: 1px solid #334155; color: #ffffff; }
+        .card:hover { transform: translateY(-4px); }
+        .dark body { background-color: #0f172a; color: #ffffff; }
+        .dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
+        .dark .text-slate-900 { color: #ffffff !important; }
+        .dark .text-slate-600 { color: #e2e8f0 !important; }
+        .dark .bg-slate-50 { background-color: #0f172a !important; }
+        .dark .border-slate-200 { border-color: #334155 !important; }
+        /* Ultra Visibility Sidebar */
+        .sidebar-link { color: #cbd5e1; font-weight: 600; }
+        .sidebar-link:hover { color: #ffffff; }
+        .sidebar-link.nav-active { color: #ffffff; }
+        .table-head { background: #6366f1; color: #ffffff; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800 transition-colors duration-300">
+
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 text-slate-400 flex flex-col p-4">
+        <div class="px-2 py-6 mb-8">
+            <h1 class="text-2xl font-bold text-white tracking-tight">Faculty<span class="text-indigo-500">Portal</span></h1>
+        </div>
+        <nav class="flex-1 space-y-2">
+            <button onclick="showPage('dashboard')" class="nav-btn sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all nav-active" id="btn-dashboard">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+            </button>
+            <button onclick="showPage('faculty')" class="nav-btn sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all" id="btn-faculty">
+                <i data-lucide="users" class="w-5 h-5"></i> Faculty List
+            </button>
+            <button onclick="showPage('exams')" class="nav-btn sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all" id="btn-exams">
+                <i data-lucide="calendar" class="w-5 h-5"></i> Exam Schedules
+            </button>
+            <button onclick="showPage('allocations')" class="nav-btn sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all" id="btn-allocations">
+                <i data-lucide="check-square" class="w-5 h-5"></i> Allocations
+            </button>
+        </nav>
+        <div class="pt-4 border-t border-slate-800 mt-auto">
+            <button class="flex items-center gap-3 px-4 py-3 w-full hover:text-white transition-colors">
+                <i data-lucide="log-out" class="w-5 h-5"></i> Sign Out
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto relative">
+        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40 transition-colors">
+            <div class="text-xl font-bold text-slate-900 transition-colors" id="page-title">Dashboard Overview</div>
+            <div class="flex items-center gap-6">
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-500 dark:text-slate-400" id="theme-toggle">
+                    <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+                    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                </button>
+                <div class="flex items-center gap-3 border-l pl-6 border-slate-200 ml-2">
+                    <div class="text-right hidden md:block">
+                        <p class="text-sm font-bold text-slate-900 dark:text-white leading-none">Santhanaprabhu</p>
+                        <p class="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tighter">Super Admin</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-600/30">SP</div>
+                </div>
+            </div>
+        </header>
+
+        <div id="content" class="p-8 pb-12 animate-in fade-in duration-500">
+            <!-- Content Injected Here -->
+        </div>
+    </main>
+
+    <script>
+        const API_URL = "http://localhost:8000/api";
+
+        async function showPage(page) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active'));
+            document.getElementById(`btn-${page}`).classList.add('nav-active');
+            
+            const content = document.getElementById('content');
+            content.style.opacity = '0';
+            
+            setTimeout(async () => {
+                if (page === 'dashboard') await renderDashboard();
+                if (page === 'faculty') await renderFaculty();
+                if (page === 'exams') await renderExams();
+                if (page === 'allocations') await renderAllocations();
+                content.style.opacity = '1';
+                lucide.createIcons();
+            }, 100);
+        }
+
+        async function renderDashboard() {
+            document.getElementById('page-title').innerText = "Dashboard Overview";
+            const facultyRes = await axios.get(`${API_URL}/faculty`);
+            const examRes = await axios.get(`${API_URL}/exams`);
+            
+            document.getElementById('content').innerHTML = `
+                <div class="grid grid-cols-4 gap-6 mb-8">
+                    <div class="card flex items-center gap-4"><div class="p-3 bg-blue-500 text-white rounded-xl"><i data-lucide="users"></i></div><div><p class="text-xs font-bold text-slate-500 dark:text-slate-400">Total Faculty</p><p class="text-2xl font-black">${facultyRes.data.length}</p></div></div>
+                    <div class="card flex items-center gap-4"><div class="p-3 bg-indigo-500 text-white rounded-xl"><i data-lucide="calendar"></i></div><div><p class="text-xs font-bold text-slate-500 dark:text-slate-400">Exam Sessions</p><p class="text-2xl font-black">${examRes.data.length}</p></div></div>
+                    <div class="card flex items-center gap-4"><div class="p-3 bg-emerald-500 text-white rounded-xl"><i data-lucide="check-circle"></i></div><div><p class="text-xs font-bold text-slate-500 dark:text-slate-400">Allocated</p><p class="text-2xl font-black">Ready</p></div></div>
+                    <div class="card flex items-center gap-4"><div class="p-3 bg-orange-500 text-white rounded-xl"><i data-lucide="shield"></i></div><div><p class="text-xs font-bold text-slate-500 dark:text-slate-400">System Security</p><p class="text-2xl font-black">Active</p></div></div>
+                </div>
+                <div class="grid grid-cols-1 gap-8">
+                    <div class="card overflow-x-auto">
+                        <h3 class="font-black text-lg mb-6 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-indigo-600"></i> Departmental Duty Distribution</h3>
+                        <div class="h-80 min-w-[800px] bg-slate-50 dark:bg-slate-900/50 rounded-2xl flex items-end justify-around p-8 pt-12 gap-1 border border-slate-100 dark:border-slate-800">
+                             <div class="flex flex-col items-center gap-3 w-full"><div class="w-12 bg-indigo-500 rounded-t-lg h-[85%] shadow-lg shadow-indigo-500/20"></div><span class="text-[10px] font-black uppercase tracking-tighter">CSE</span></div>
+                             <div class="flex flex-col items-center gap-3 w-full"><div class="w-12 bg-indigo-500 rounded-t-lg h-[65%] shadow-lg shadow-indigo-500/20"></div><span class="text-[10px] font-black uppercase tracking-tighter">AIDS</span></div>
+                             <div class="flex flex-col items-center gap-3 w-full"><div class="w-12 bg-indigo-500 rounded-t-lg h-[50%] shadow-lg shadow-indigo-500/20"></div><span class="text-[10px] font-black uppercase tracking-tighter">AIML</span></div>
+                             <div class="flex flex-col items-center gap-3 w-full"><div class="w-12 bg-indigo-500 rounded-t-lg h-[40%] shadow-lg shadow-indigo-500/20"></div><span class="text-[10px] font-black uppercase tracking-tighter">CCE</span></div>
+                             <div class="flex flex-col items-center gap-3 w-full"><div class="w-12 bg-indigo-500 rounded-t-lg h-[35%] shadow-lg shadow-indigo-500/20"></div><span class="text-[10px] font-black uppercase tracking-tighter">ECE</span></div>
+                             <div class="flex flex-col items-center gap-3 w-full"><div class="w-12 bg-indigo-500 rounded-t-lg h-[45%] shadow-lg shadow-indigo-500/20"></div><span class="text-[10px] font-black uppercase tracking-tighter">MECH</span></div>
+                             <div class="flex flex-col items-center gap-3 w-full"><div class="w-12 bg-indigo-500 rounded-t-lg h-[30%] shadow-lg shadow-indigo-500/20"></div><span class="text-[10px] font-black uppercase tracking-tighter">VLSI</span></div>
+                             <div class="flex flex-col items-center gap-3 w-full"><div class="w-12 bg-indigo-500 rounded-t-lg h-[25%] shadow-lg shadow-indigo-500/20"></div><span class="text-[10px] font-black uppercase tracking-tighter">BT</span></div>
+                             <div class="flex flex-col items-center gap-3 w-full"><div class="w-12 bg-indigo-500 rounded-t-lg h-[20%] shadow-lg shadow-indigo-500/20"></div><span class="text-[10px] font-black uppercase tracking-tighter">CSBS</span></div>
+                             <div class="flex flex-col items-center gap-3 w-full"><div class="w-12 bg-indigo-500 rounded-t-lg h-[30%] shadow-lg shadow-indigo-500/20"></div><span class="text-[10px] font-black uppercase tracking-tighter">H&S</span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function renderFaculty() {
+            document.getElementById('page-title').innerText = "Faculty Management";
+            const res = await axios.get(`${API_URL}/faculty`);
+            let rows = res.data.map(f => `
+                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4 font-bold text-slate-900">${f.name}</td>
+                    <td class="px-6 py-4 text-slate-600">${f.department}</td>
+                    <td class="px-6 py-4 text-slate-600">${f.designation}</td>
+                    <td class="px-6 py-4"><span class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold">${f.availability}</span></td>
+                    <td class="px-6 py-4 text-center font-bold text-indigo-600">${f.current_duties} / ${f.max_duties}</td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('content').innerHTML = `
+                <div class="flex justify-end mb-6"><button onclick="document.getElementById('faculty-modal').classList.remove('hidden')" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all">+ Add Faculty</button></div>
+                <div class="card !p-0 overflow-hidden shadow-2xl">
+                    <table class="w-full text-left">
+                        <thead class="bg-indigo-600 text-white text-xs font-bold uppercase tracking-widest">
+                            <tr><th class="px-6 py-4">Faculty Name</th><th class="px-6 py-4">Department</th><th class="px-6 py-4">Designation</th><th class="px-6 py-4">Pref</th><th class="px-6 py-4 text-center">Workload</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">${rows}</tbody>
+                    </table>
+                </div>
+
+                <!-- Add Faculty Modal -->
+                <div id="faculty-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 hidden">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold">Add New Faculty</h2>
+                            <button onclick="document.getElementById('faculty-modal').classList.add('hidden')" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full"><i data-lucide="x"></i></button>
+                        </div>
+                        <div class="space-y-4">
+                            <div><label class="block text-xs font-bold text-slate-400 mb-1 tracking-wider uppercase">Name</label><input type="text" id="fac-name" class="w-full bg-slate-50 dark:bg-slate-900 border-none rounded-xl px-4 py-2.5"></div>
+                            <div><label class="block text-xs font-bold text-slate-400 mb-1 tracking-wider uppercase">Department</label>
+                                <select id="fac-dept" class="w-full bg-slate-50 dark:bg-slate-900 border-none rounded-xl px-4 py-2.5">
+                                    <option value="CSE">CSE</option><option value="AIDS">AIDS</option><option value="AIML">AIML</option><option value="CCE">CCE</option><option value="ECE">ECE</option><option value="MECH">MECH</option><option value="VLSI">VLSI</option><option value="BT">BT</option><option value="CSBS">CSBS</option><option value="H&S">H&S</option>
+                                </select>
+                            </div>
+                            <button onclick="addFaculty()" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold mt-4">Save Faculty</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function addFaculty() {
+            const name = document.getElementById('fac-name').value;
+            const department = document.getElementById('fac-dept').value;
+            await axios.post(`${API_URL}/faculty`, { name, department, designation: 'Assistant Professor' });
+            document.getElementById('faculty-modal').classList.add('hidden');
+            renderFaculty();
+        }
+
+        async function renderExams() {
+            document.getElementById('page-title').innerText = "Exam Schedules";
+            const res = await axios.get(`${API_URL}/exams`);
+            let cards = res.data.map(e => `
+                <div class="card">
+                    <div class="flex justify-between mb-4"><span class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md text-xs font-bold">${e.session}</span><span class="text-xs text-slate-400">#${e.id}</span></div>
+                    <h4 class="font-bold text-lg mb-4">${e.department_conducting} Dept</h4>
+                    <div class="space-y-2 text-sm text-slate-600">
+                        <p class="flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> ${e.exam_date}</p>
+                        <p class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4"></i> Hall: ${e.hall_number}</p>
+                        <p class="flex items-center gap-2 text-indigo-600 font-bold"><i data-lucide="users" class="w-4 h-4"></i> ${e.required_invigilators} Needed</p>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('content').innerHTML = `
+                <div class="flex justify-end mb-6"><button class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all">+ New Exam</button></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">${cards}</div>
+            `;
+        }
+
+        async function renderAllocations() {
+            document.getElementById('page-title').innerText = "Smart Allocation Engine";
+            const examRes = await axios.get(`${API_URL}/exams`);
+            const allocRes = await axios.get(`${API_URL}/allocations`);
+            
+            let exams = examRes.data.map(e => `
+                <div class="p-4 bg-slate-50 rounded-xl mb-4 border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-bold text-slate-400 capitalize">${e.session} • ${e.hall_number}</span>
+                    </div>
+                    <p class="font-bold text-sm mb-4">${e.department_conducting} Exam</p>
+                    <button onclick="generate(${e.id})" class="w-full py-2 bg-indigo-600/10 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-600/20 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="wand-2" class="w-4 h-4"></i> Auto-Generate
+                    </button>
+                </div>
+            `).join('');
+
+            let allocRows = allocRes.data.map(a => `
+                <tr class="border-b border-slate-100">
+                    <td class="px-6 py-4 font-bold text-slate-900">${a.faculty.name}</td>
+                    <td class="px-6 py-4 text-indigo-600 font-mono font-bold">${a.exam_schedule.hall_number}</td>
+                    <td class="px-6 py-4 text-slate-600">${a.exam_schedule.exam_date} (${a.exam_schedule.session})</td>
+                    <td class="px-6 py-4 text-center"><span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold">VERIFIED</span></td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('content').innerHTML = `
+                <div class="grid grid-cols-4 gap-8">
+                    <div class="col-span-1 border-r pr-8">${exams}</div>
+                    <div class="col-span-3 card !p-0">
+                         <div class="p-6 border-b flex justify-between items-center">
+                            <h3 class="font-bold">Live Assignments</h3>
+                            <button class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold">Download Excel</button>
+                         </div>
+                         <table class="w-full text-left">
+                            <thead class="bg-indigo-600 text-white text-[10px] font-bold uppercase">
+                                <tr><th class="px-6 py-3">Faculty</th><th class="px-6 py-3">Hall</th><th class="px-6 py-3">Exam Date</th><th class="px-6 py-3 text-center">Status</th></tr>
+                            </thead>
+                            <tbody>${allocRows || '<tr><td colspan="4" class="p-12 text-center text-slate-400 text-sm">No allocations generated.</td></tr>'}</tbody>
+                         </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function generate(id) {
+            try {
+                await axios.post(`${API_URL}/allocations/generate/${id}`);
+                showPage('allocations');
+            } catch (error) {
+                alert("Generation failed! Please check constraints.");
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            lucide.createIcons();
+        }
+
+        // Init
+        window.onload = () => {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+            showPage('dashboard');
+        };
+    </script>
+</body>
+</html>
